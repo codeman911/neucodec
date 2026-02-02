@@ -46,7 +46,7 @@ from training.losses import (
     FeatureMatchingLoss,
     SemanticReconstructionLoss,
 )
-from training.data import create_dataloader, create_chatml_dataloader, AudioAugmentor, AugmentationConfig
+from training.data import create_dataloader, create_chatml_dataloader, create_chatml_dataloaders, AudioAugmentor, AugmentationConfig
 from training.data.dataloader import DataConfig, ChatMLDataConfig
 
 
@@ -280,9 +280,13 @@ class NeuCodecTrainer:
         
         if data_format == "chatml":
             # ChatML format dataset
+            val_json_paths = data_config.get("val_json_paths")
+            val_split_ratio = data_config.get("val_split_ratio", 0.05)
+            
             config = ChatMLDataConfig(
                 train_json_paths=data_config["train_json_paths"],
-                val_json_paths=data_config["val_json_paths"],
+                val_json_paths=val_json_paths,
+                val_split_ratio=val_split_ratio,
                 segment_length=data_config["segment_length"],
                 sample_rate=data_config["sample_rate"],
                 batch_size=data_config["batch_size"],
@@ -296,12 +300,9 @@ class NeuCodecTrainer:
                 augmentation=augmentation_config,
             )
             
-            # Create dataloaders
-            self.train_loader = create_chatml_dataloader(
-                config, is_training=True, distributed=self.distributed
-            )
-            self.val_loader = create_chatml_dataloader(
-                config, is_training=False, distributed=self.distributed
+            # Create dataloaders (handles auto-split if val_json_paths is None)
+            self.train_loader, self.val_loader = create_chatml_dataloaders(
+                config, distributed=self.distributed
             )
         else:
             # Standard format dataset

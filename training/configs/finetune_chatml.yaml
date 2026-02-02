@@ -64,16 +64,17 @@ data:
   
   # ChatML JSON file paths
   train_json_paths:
-    - "/path/to/your/train_data.json"
-  val_json_paths:
-    - "/path/to/your/val_data.json"
+    - "/scratch/vikram.solanki/workspace/vs/neutts/datasets/raw/gulf_tts_v3_dataset_chatml.json"
+    - "/scratch/vikram.solanki/workspace/vs/neutts/datasets/raw/tts_dialect_data_v1_chatml.json"
+  val_json_paths: null  # Auto-split 5% from training data
+  val_split_ratio: 0.05  # Use 5% of training data for validation
   
   # Audio settings
   segment_length: 48000  # 3 seconds at 16kHz (Arabic speech tends to be longer)
   sample_rate: 16000
   
   # DataLoader settings
-  batch_size: 16  # Smaller batch for finetuning
+  batch_size: 16  # Per-GPU batch size
   num_workers: 8
   pin_memory: true
   
@@ -84,7 +85,7 @@ data:
   # ChatML specific settings
   use_reference_audio: true   # Use reference audio from user messages
   use_target_audio: true      # Use target audio from assistant messages
-  audio_base_path: null       # Set if audio paths are relative
+  audio_base_path: "/scratch/vikram.solanki/workspace/vs/neutts/datasets/raw"  # Base path for relative audio URLs
   
   # Augmentation (lighter for finetuning)
   augmentation:

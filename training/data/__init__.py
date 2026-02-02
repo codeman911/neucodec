@@ -6,6 +6,7 @@ from .dataloader import (
     ChatMLDataConfig,
     create_dataloader,
     create_chatml_dataloader,
+    create_chatml_dataloaders,
 )
 from .augmentation import AudioAugmentor, AugmentationConfig
 
@@ -17,6 +18,7 @@ __all__ = [
     "ChatMLDataConfig",
     "create_dataloader",
     "create_chatml_dataloader",
+    "create_chatml_dataloaders",
     "AudioAugmentor",
     "AugmentationConfig",
 ]

@@ -11,7 +11,7 @@ import torchaudio
 import torchaudio.transforms as T
 from torch.utils.data import Dataset, DataLoader, DistributedSampler
 from pathlib import Path
-from typing import Optional, List, Dict, Union, Callable
+from typing import Optional, List, Dict, Union, Callable, Tuple
 from dataclasses import dataclass
 import logging
 
@@ -605,7 +605,8 @@ def create_dataloader(
 class ChatMLDataConfig:
     """Configuration for ChatML data loading."""
     train_json_paths: List[str]
-    val_json_paths: List[str]
+    val_json_paths: Optional[List[str]] = None  # If None, auto-split from train
+    val_split_ratio: float = 0.05  # Use 5% for validation if auto-split
     segment_length: int = 32000  # 2 seconds at 16kHz
     sample_rate: int = 16000
     batch_size: int = 32
@@ -617,12 +618,16 @@ class ChatMLDataConfig:
     use_target_audio: bool = True
     audio_base_path: Optional[str] = None
     augmentation: Optional[AugmentationConfig] = None
+    # Internal: populated by create_chatml_dataloaders when auto-splitting
+    _train_indices: Optional[List[int]] = None
+    _val_indices: Optional[List[int]] = None
 
 
 def create_chatml_dataloader(
     config: ChatMLDataConfig,
     is_training: bool = True,
     distributed: bool = False,
+    indices: Optional[List[int]] = None,
 ) -> AudioDataLoader:
     """
     Create dataloader for ChatML format dataset.
@@ -631,6 +636,7 @@ def create_chatml_dataloader(
         config: ChatML data configuration
         is_training: Whether this is training data
         distributed: Whether using distributed training
+        indices: Optional subset indices to use (for train/val split)
         
     Returns:
         AudioDataLoader instance
@@ -643,8 +649,12 @@ def create_chatml_dataloader(
             sample_rate=config.sample_rate,
         )
     
-    # Select paths
-    json_paths = config.train_json_paths if is_training else config.val_json_paths
+    # Determine JSON paths
+    if is_training:
+        json_paths = config.train_json_paths
+    else:
+        # Use explicit val paths if provided, otherwise use train paths (will be subset)
+        json_paths = config.val_json_paths if config.val_json_paths else config.train_json_paths
     
     # Create dataset
     dataset = ChatMLDataset(
@@ -660,6 +670,11 @@ def create_chatml_dataloader(
         audio_base_path=config.audio_base_path,
     )
     
+    # Apply index subset if provided (for train/val split)
+    if indices is not None:
+        dataset.audio_entries = [dataset.audio_entries[i] for i in indices if i < len(dataset.audio_entries)]
+        logger.info(f"Applied subset: {len(dataset.audio_entries)} entries")
+    
     # Create dataloader
     return AudioDataLoader(
         dataset=dataset,
@@ -670,3 +685,66 @@ def create_chatml_dataloader(
         shuffle=is_training,
         drop_last=is_training,
     )
+
+
+def create_chatml_dataloaders(
+    config: ChatMLDataConfig,
+    distributed: bool = False,
+) -> Tuple[AudioDataLoader, AudioDataLoader]:
+    """
+    Create both train and validation dataloaders for ChatML format.
+    
+    If val_json_paths is None, automatically splits training data using val_split_ratio.
+    
+    Args:
+        config: ChatML data configuration
+        distributed: Whether using distributed training
+        
+    Returns:
+        Tuple of (train_dataloader, val_dataloader)
+    """
+    if config.val_json_paths:
+        # Explicit validation paths provided
+        train_loader = create_chatml_dataloader(config, is_training=True, distributed=distributed)
+        val_loader = create_chatml_dataloader(config, is_training=False, distributed=distributed)
+    else:
+        # Auto-split from training data
+        logger.info(f"No validation paths provided, splitting {config.val_split_ratio*100:.0f}% from training data")
+        
+        # First, load all entries to get total count
+        temp_dataset = ChatMLDataset(
+            json_paths=config.train_json_paths,
+            segment_length=config.segment_length,
+            sample_rate=config.sample_rate,
+            min_duration=config.min_duration,
+            max_duration=config.max_duration,
+            augmentor=None,
+            is_training=False,
+            use_reference_audio=config.use_reference_audio,
+            use_target_audio=config.use_target_audio,
+            audio_base_path=config.audio_base_path,
+        )
+        
+        total_entries = len(temp_dataset)
+        indices = list(range(total_entries))
+        
+        # Shuffle with fixed seed for reproducibility
+        random.seed(42)
+        random.shuffle(indices)
+        
+        # Split indices
+        val_size = int(total_entries * config.val_split_ratio)
+        val_indices = indices[:val_size]
+        train_indices = indices[val_size:]
+        
+        logger.info(f"Split: {len(train_indices)} train, {len(val_indices)} validation entries")
+        
+        # Create dataloaders with subset indices
+        train_loader = create_chatml_dataloader(
+            config, is_training=True, distributed=distributed, indices=train_indices
+        )
+        val_loader = create_chatml_dataloader(
+            config, is_training=False, distributed=distributed, indices=val_indices
+        )
+    
+    return train_loader, val_loader
