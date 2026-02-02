@@ -134,33 +134,46 @@ class FeatureMatchingLoss(nn.Module):
         super().__init__()
         self.loss_type = loss_type
     
+    def _flatten_features(self, features):
+        """Recursively flatten nested feature lists to pairs of tensors."""
+        flat = []
+        for item in features:
+            if isinstance(item, torch.Tensor):
+                flat.append(item)
+            elif isinstance(item, list):
+                flat.extend(self._flatten_features(item))
+        return flat
+    
     def forward(
         self,
-        real_features: List[List[torch.Tensor]],
-        fake_features: List[List[torch.Tensor]],
+        real_features: List,
+        fake_features: List,
     ) -> torch.Tensor:
         """
         Compute feature matching loss.
         
         Args:
-            real_features: List of feature lists from discriminators for real samples
-            fake_features: List of feature lists from discriminators for fake samples
+            real_features: Nested list of features from discriminators for real samples
+            fake_features: Nested list of features from discriminators for fake samples
             
         Returns:
             loss: Total feature matching loss
         """
+        # Flatten nested feature lists
+        real_flat = self._flatten_features(real_features)
+        fake_flat = self._flatten_features(fake_features)
+        
         total_loss = 0.0
         num_features = 0
         
-        for real_feat_list, fake_feat_list in zip(real_features, fake_features):
-            for real_feat, fake_feat in zip(real_feat_list, fake_feat_list):
-                if self.loss_type == "l1":
-                    loss = F.l1_loss(fake_feat, real_feat.detach())
-                else:
-                    loss = F.mse_loss(fake_feat, real_feat.detach())
-                
-                total_loss = total_loss + loss
-                num_features += 1
+        for real_feat, fake_feat in zip(real_flat, fake_flat):
+            if self.loss_type == "l1":
+                loss = F.l1_loss(fake_feat, real_feat.detach())
+            else:
+                loss = F.mse_loss(fake_feat, real_feat.detach())
+            
+            total_loss = total_loss + loss
+            num_features += 1
         
         return total_loss / max(num_features, 1)
 
