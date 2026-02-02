@@ -17,9 +17,14 @@ import sys
 import argparse
 import logging
 import random
+import warnings
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, Any
+
+# Suppress deprecation warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning, module="torch")
 
 import yaml
 import torch
@@ -27,7 +32,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 from tqdm import tqdm
 
 # Add parent directory to path
@@ -102,7 +107,7 @@ class NeuCodecTrainer:
         self.best_val_loss = float("inf")
         
         # Mixed precision scaler
-        self.scaler = GradScaler(enabled=config["training"]["mixed_precision"] != "fp32")
+        self.scaler = GradScaler('cuda', enabled=config["training"]["mixed_precision"] != "fp32")
         
     @property
     def is_main_process(self) -> bool:
@@ -376,7 +381,7 @@ class NeuCodecTrainer:
         # ========== Generator Step ==========
         self.optimizer_g.zero_grad()
         
-        with autocast(enabled=train_config["mixed_precision"] != "fp32"):
+        with autocast('cuda', enabled=train_config["mixed_precision"] != "fp32"):
             # Forward through generator
             gen_module = self.generator.module if self.distributed else self.generator
             
@@ -443,7 +448,7 @@ class NeuCodecTrainer:
         if use_disc:
             self.optimizer_d.zero_grad()
             
-            with autocast(enabled=train_config["mixed_precision"] != "fp32"):
+            with autocast('cuda', enabled=train_config["mixed_precision"] != "fp32"):
                 disc_module = self.discriminators.module if self.distributed else self.discriminators
                 
                 all_real_outputs = []
@@ -622,10 +627,17 @@ class NeuCodecTrainer:
                     self.scheduler_g.step()
                     self.scheduler_d.step()
                 
-                # Logging
+                # Always update progress bar with key losses
+                pbar.set_postfix({
+                    "mel": f"{losses.get('mel', 0):.3f}",
+                    "adv": f"{losses.get('adversarial', 0):.3f}",
+                    "fm": f"{losses.get('feature_matching', 0):.3f}",
+                    "step": self.global_step,
+                })
+                
+                # Detailed logging at intervals
                 if self.global_step % train_config["log_every_steps"] == 0:
                     self.log_metrics(losses)
-                    pbar.set_postfix({k: f"{v:.4f}" for k, v in losses.items()})
                 
                 # Validation
                 if self.global_step % train_config["eval_every_steps"] == 0:

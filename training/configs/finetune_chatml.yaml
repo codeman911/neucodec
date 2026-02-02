@@ -75,7 +75,7 @@ data:
   
   # DataLoader settings
   batch_size: 16  # Per-GPU batch size
-  num_workers: 8
+  num_workers: 4  # Reduced for stability
   pin_memory: true
   
   # Duration filtering
@@ -92,12 +92,14 @@ data:
     enabled: true
     noise_prob: 0.1           # Lower noise probability
     noise_snr_range: [15, 35] # Higher SNR (less noise)
-    reverb_prob: 0.1
-    pitch_shift_prob: 0.05    # Less pitch shifting
+    reverb_prob: 0.05         # Reduced - CPU intensive
+    pitch_shift_prob: 0.0     # Disabled - CPU intensive
     pitch_shift_range: [-1, 1]
-    time_stretch_prob: 0.05
+    time_stretch_prob: 0.0    # Disabled - very CPU intensive
     time_stretch_range: [0.95, 1.05]
     volume_range: [-3, 2]
+    lowpass_prob: 0.0         # Disabled for speed
+    highpass_prob: 0.0        # Disabled for speed
 
 # ============= Optimizer Configuration =============
 optimizer:
