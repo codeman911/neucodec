@@ -221,20 +221,14 @@ class AudioAugmentor:
         return stretched
     
     def apply_lowpass(self, waveform: torch.Tensor) -> torch.Tensor:
-        """Apply low-pass filter."""
+        """Apply low-pass filter using biquad."""
         cutoff = random.randint(*self.config.lowpass_cutoff_range)
-        
-        # Simple FIR low-pass filter
-        lowpass = T.Lowpass(self.sample_rate, cutoff)
-        return lowpass(waveform)
+        return torchaudio.functional.lowpass_biquad(waveform, self.sample_rate, cutoff)
     
     def apply_highpass(self, waveform: torch.Tensor) -> torch.Tensor:
-        """Apply high-pass filter."""
+        """Apply high-pass filter using biquad."""
         cutoff = random.randint(*self.config.highpass_cutoff_range)
-        
-        # Simple FIR high-pass filter
-        highpass = T.Highpass(self.sample_rate, cutoff)
-        return highpass(waveform)
+        return torchaudio.functional.highpass_biquad(waveform, self.sample_rate, cutoff)
     
     def simulate_codec(self, waveform: torch.Tensor) -> torch.Tensor:
         """Simulate lossy codec compression artifacts."""

@@ -6,7 +6,18 @@ Supports hinge, LSGAN, and vanilla GAN losses.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import List, Literal
+from typing import List, Union, Literal
+
+
+def _flatten_outputs(outputs: List[Union[torch.Tensor, List[torch.Tensor]]]) -> List[torch.Tensor]:
+    """Flatten nested list of outputs from multi-scale discriminators."""
+    flat = []
+    for out in outputs:
+        if isinstance(out, list):
+            flat.extend(out)
+        else:
+            flat.append(out)
+    return flat
 
 
 class DiscriminatorLoss(nn.Module):
@@ -24,8 +35,8 @@ class DiscriminatorLoss(nn.Module):
     
     def forward(
         self,
-        real_outputs: List[torch.Tensor],
-        fake_outputs: List[torch.Tensor],
+        real_outputs: List[Union[torch.Tensor, List[torch.Tensor]]],
+        fake_outputs: List[Union[torch.Tensor, List[torch.Tensor]]],
     ) -> torch.Tensor:
         """
         Compute discriminator loss.
@@ -37,6 +48,10 @@ class DiscriminatorLoss(nn.Module):
         Returns:
             loss: Total discriminator loss
         """
+        # Flatten nested lists from multi-scale discriminators
+        real_outputs = _flatten_outputs(real_outputs)
+        fake_outputs = _flatten_outputs(fake_outputs)
+        
         total_loss = 0.0
         
         for real_out, fake_out in zip(real_outputs, fake_outputs):
@@ -76,7 +91,7 @@ class GeneratorAdversarialLoss(nn.Module):
     
     def forward(
         self,
-        fake_outputs: List[torch.Tensor],
+        fake_outputs: List[Union[torch.Tensor, List[torch.Tensor]]],
     ) -> torch.Tensor:
         """
         Compute generator adversarial loss.
@@ -87,6 +102,9 @@ class GeneratorAdversarialLoss(nn.Module):
         Returns:
             loss: Total generator adversarial loss
         """
+        # Flatten nested lists from multi-scale discriminators
+        fake_outputs = _flatten_outputs(fake_outputs)
+        
         total_loss = 0.0
         
         for fake_out in fake_outputs:
