@@ -1,0 +1,113 @@
+# Audar-Codec Phase 2: Streaming Encoder Training Config
+#
+# Goal: Train causal encoder while maintaining reconstruction quality
+# Strategy: Progressive causality - start with partial look-ahead, reduce to zero
+
+# Model Configuration  
+model:
+  # Encoder (causal)
+  encoder:
+    channels: [32, 64, 128, 256, 512]
+    strides: [2, 2, 4, 5, 6]
+    kernel_size: 7
+    causal: true
+  
+  # Decoder (from Phase 1)
+  decoder:
+    hidden_dim: 1024
+    depth: 12
+    heads: 16
+    rope_dim: 64
+    hop_length: 480
+  
+  # Semantic encoder
+  semantic:
+    model_name: facebook/wav2vec2-xls-r-300m
+    output_dim: 1024
+    freeze: true  # Freeze XLS-R, only train projection
+    layer_idx: 12  # Use layer 12 features
+  
+  # Quantizer
+  quantizer:
+    dim: 2048
+    levels: [4, 4, 4, 4, 4, 4, 4, 4]
+    num_quantizers: 1
+
+# Checkpoint
+checkpoint:
+  phase1_path: null  # Path to Phase 1 trained decoder
+  freeze_decoder: true  # Freeze decoder, train encoder
+  freeze_quantizer: true
+
+# Training Configuration
+training:
+  batch_size: 8
+  gradient_accumulation_steps: 4
+  max_seq_length: 400  # ~8 seconds
+  
+  optimizer: adamw
+  learning_rate: 5.0e-5
+  weight_decay: 0.01
+  
+  scheduler: cosine
+  warmup_steps: 2000
+  max_steps: 100000
+  
+  mixed_precision: bf16
+  gradient_checkpointing: true
+  
+  log_every: 100
+  eval_every: 2000
+  save_every: 10000
+
+# Loss Configuration
+loss:
+  # Reconstruction losses (same as Phase 1)
+  stft_loss:
+    enabled: true
+    fft_sizes: [512, 1024, 2048]
+    weight: 1.0
+  
+  mel_loss:
+    enabled: true
+    weight: 45.0
+  
+  # Semantic distillation loss
+  semantic_loss:
+    enabled: true
+    weight: 1.0
+    teacher_model: facebook/w2v-bert-2.0
+    teacher_layer: 16
+  
+  # Commitment loss for quantizer
+  commit_loss:
+    enabled: true
+    weight: 0.25
+
+# Progressive causality schedule
+progressive_causality:
+  enabled: true
+  # Start with some look-ahead, reduce to zero
+  initial_look_ahead: 4  # frames
+  final_look_ahead: 0
+  reduction_steps: 50000  # Linear reduction over this many steps
+
+# Data Configuration
+data:
+  train_manifest: null
+  val_manifest: null
+  num_workers: 8
+  sample_rate: 24000
+  max_duration: 8.0
+  min_duration: 1.0
+
+# Streaming simulation
+streaming:
+  chunk_size: 40
+  simulate_streaming: true
+  encoder_chunk_size: 4800  # samples (~200ms at 24kHz)
+
+# Hardware
+hardware:
+  devices: 1
+  accelerator: gpu

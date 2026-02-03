@@ -1,0 +1,129 @@
+# Audar-Codec Phase 3: Hierarchical Quantization Config
+#
+# Goal: Add hierarchical quantization for LLM compatibility
+# - Coarse tokens: 12.5Hz (LLM-friendly)
+# - Fine tokens: 50Hz (quality preservation)
+
+# Model Configuration
+model:
+  # Full streaming encoder-decoder
+  encoder:
+    channels: [32, 64, 128, 256, 512]
+    strides: [2, 2, 4, 5, 6]
+    causal: true
+  
+  decoder:
+    hidden_dim: 1024
+    depth: 12
+    heads: 16
+    rope_dim: 64
+    hop_length: 480
+  
+  semantic:
+    model_name: facebook/wav2vec2-xls-r-300m
+    output_dim: 1024
+    freeze: true
+  
+  # Hierarchical quantization
+  quantizer:
+    # Coarse quantizer (12.5Hz for LLM)
+    coarse:
+      enabled: true
+      frame_rate: 12.5
+      dim: 1024
+      levels: [8, 8, 8, 8]  # 4096 vocab size
+      num_quantizers: 1
+      downsample_factor: 4  # 50Hz -> 12.5Hz
+    
+    # Fine quantizer (50Hz for quality)
+    fine:
+      enabled: true
+      frame_rate: 50.0
+      dim: 2048
+      levels: [4, 4, 4, 4, 4, 4, 4, 4]
+      num_quantizers: 1
+      condition_on_coarse: true
+
+# Checkpoint
+checkpoint:
+  phase2_path: null  # Path to Phase 2 checkpoint
+  freeze_encoder: false
+  freeze_decoder: false
+
+# Training Configuration
+training:
+  batch_size: 8
+  gradient_accumulation_steps: 4
+  max_seq_length: 300
+  
+  optimizer: adamw
+  learning_rate: 2.0e-5
+  weight_decay: 0.01
+  
+  scheduler: cosine
+  warmup_steps: 3000
+  max_steps: 150000
+  
+  mixed_precision: bf16
+  gradient_checkpointing: true
+
+# Loss Configuration
+loss:
+  # Reconstruction
+  stft_loss:
+    enabled: true
+    weight: 1.0
+  
+  mel_loss:
+    enabled: true
+    weight: 45.0
+  
+  # Hierarchical consistency
+  hierarchical_loss:
+    enabled: true
+    weight: 0.5
+    # Coarse tokens should reconstruct well alone
+    coarse_reconstruction_weight: 1.0
+    # Fine tokens add detail
+    fine_residual_weight: 0.5
+  
+  # Quantizer losses
+  coarse_commit_loss:
+    enabled: true
+    weight: 0.25
+  
+  fine_commit_loss:
+    enabled: true
+    weight: 0.25
+
+# LLM compatibility settings
+llm_compatibility:
+  # Target vocab size for coarse tokens
+  target_vocab_size: 4096
+  # Ensure coarse tokens are information-dense
+  coarse_information_loss:
+    enabled: true
+    weight: 0.1
+  # Semantic alignment for coarse tokens
+  semantic_alignment:
+    enabled: true
+    weight: 0.5
+
+# Data Configuration
+data:
+  train_manifest: null
+  val_manifest: null
+  num_workers: 8
+  sample_rate: 24000
+  max_duration: 6.0
+  min_duration: 1.0
+
+# Streaming
+streaming:
+  chunk_size: 25  # coarse frames
+  fine_chunk_size: 100  # fine frames
+
+# Hardware
+hardware:
+  devices: 1
+  accelerator: gpu

@@ -1,0 +1,64 @@
+# Audar-Codec Inference Configuration
+#
+# Optimized settings for streaming inference
+
+model:
+  hidden_dim: 1024
+  depth: 12
+  heads: 16
+  rope_dim: 64
+  hop_length: 480
+  vq_dim: 2048
+  sample_rate: 24000
+
+# Streaming settings
+streaming:
+  enabled: true
+  chunk_size: 10  # frames per chunk (200ms at 50Hz)
+  max_latency_ms: 200
+  
+  # KV-cache settings
+  kv_cache:
+    max_length: 4096  # Max cached sequence length
+    sliding_window: true
+  
+  # Buffer settings
+  istft_buffer: true
+  conv_cache: true
+
+# Optimization
+optimization:
+  # Quantization (for deployment)
+  quantize_weights: false  # Enable for int8 inference
+  quantize_kv_cache: false
+  
+  # Compilation
+  torch_compile: false  # Enable for torch.compile optimization
+  compile_mode: reduce-overhead
+  
+  # Memory
+  use_flash_attention: true
+  gradient_checkpointing: false  # Not needed for inference
+
+# Hardware targets
+hardware:
+  # CPU inference
+  cpu:
+    num_threads: 4
+    use_mkl: true
+  
+  # GPU inference  
+  gpu:
+    use_cuda_graphs: false
+    use_tensor_cores: true
+
+# Export settings
+export:
+  onnx:
+    enabled: false
+    opset_version: 17
+    dynamic_axes: true
+  
+  torchscript:
+    enabled: false
+    optimize: true

@@ -1,0 +1,102 @@
+# Audar-Codec Phase 1: Streaming Decoder Training Config
+# 
+# Goal: Fine-tune decoder with causal attention to match V1 quality
+# Strategy: Load V1 weights, train with causal masking, minimize reconstruction loss
+
+# Model Configuration
+model:
+  hidden_dim: 1024
+  depth: 12
+  heads: 16
+  rope_dim: 64
+  hop_length: 480
+  vq_dim: 2048
+  sample_rate: 24000
+
+# V1 Checkpoint for weight initialization
+checkpoint:
+  v1_path: null  # Set to NeuCodec V1 checkpoint path
+  freeze_quantizer: true
+  freeze_encoder: true  # Encoder not used in Phase 1
+
+# Training Configuration
+training:
+  # Batch and sequence
+  batch_size: 16
+  gradient_accumulation_steps: 2
+  max_seq_length: 500  # ~10 seconds at 50Hz
+  
+  # Optimizer
+  optimizer: adamw
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  betas: [0.9, 0.999]
+  
+  # Scheduler
+  scheduler: cosine
+  warmup_steps: 1000
+  max_steps: 50000
+  
+  # Precision
+  mixed_precision: bf16
+  gradient_checkpointing: true
+  
+  # Logging
+  log_every: 100
+  eval_every: 1000
+  save_every: 5000
+
+# Loss Configuration
+loss:
+  # Multi-resolution STFT loss
+  stft_loss:
+    enabled: true
+    fft_sizes: [512, 1024, 2048]
+    hop_sizes: [50, 120, 240]
+    win_sizes: [240, 600, 1200]
+    weight: 1.0
+  
+  # Mel spectrogram loss
+  mel_loss:
+    enabled: true
+    sample_rate: 24000
+    n_fft: 1024
+    hop_length: 256
+    n_mels: 80
+    weight: 45.0
+  
+  # Feature matching loss (optional)
+  feature_loss:
+    enabled: false
+    weight: 2.0
+
+# Data Configuration
+data:
+  train_manifest: null  # Path to training manifest
+  val_manifest: null    # Path to validation manifest
+  num_workers: 8
+  pin_memory: true
+  
+  # Audio processing
+  sample_rate: 24000
+  max_duration: 10.0  # seconds
+  min_duration: 1.0   # seconds
+
+# Streaming-specific training
+streaming:
+  # Simulate streaming during training
+  chunk_size: 50  # frames per chunk
+  simulate_streaming: true
+  streaming_loss_weight: 0.5  # Extra loss on streaming outputs
+
+# Hardware
+hardware:
+  devices: 1
+  accelerator: gpu
+  strategy: auto
+
+# Experiment tracking
+experiment:
+  name: audar_phase1_decoder
+  project: audar-codec
+  tags: [phase1, streaming, decoder]
