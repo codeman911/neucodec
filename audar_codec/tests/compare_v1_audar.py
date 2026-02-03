@@ -203,12 +203,13 @@ def test_neucodec_v1(model: NeuCodec, audio_path: Path, device: str, save_output
     return result
 
 
-def test_audar_streaming(audio_path: Path, device: str, save_outputs: bool = True) -> Dict:
-    """Test Audar-Codec streaming decoder."""
+def test_audar_streaming(audio_path: Path, device: str, v1_model: NeuCodec = None, save_outputs: bool = True) -> Dict:
+    """Test Audar-Codec streaming decoder with V1 weights and real embeddings."""
     from audar_codec.model import AudarCodec, AudarCodecConfig
     from audar_codec.core.streaming_decoder import StreamingCodecDecoder
+    from audar_codec.migration.v1_to_audar_loader import migrate_v1_to_audar, AudarMigrationConfig
     
-    logger.info(f"  [Audar] Creating streaming decoder")
+    logger.info(f"  [Audar] Creating streaming decoder with V1 weights")
     
     config = AudarCodecConfig(
         hidden_dim=1024,
@@ -227,6 +228,24 @@ def test_audar_streaming(audio_path: Path, device: str, save_outputs: bool = Tru
         hop_length=config.hop_length,
         vq_dim=config.vq_dim,
     )
+    
+    # Migrate V1 weights to Audar decoder
+    if v1_model is not None:
+        logger.info(f"  [Audar] Migrating weights from NeuCodec V1...")
+        v1_state_dict = v1_model.state_dict()
+        migration_config = AudarMigrationConfig.for_inference()
+        audar_weights = migrate_v1_to_audar(v1_state_dict, migration_config)
+        
+        # Load migrated weights
+        missing, unexpected = decoder.load_state_dict(audar_weights, strict=False)
+        logger.info(f"  [Audar] Weight migration: {len(audar_weights)} weights loaded")
+        if missing:
+            logger.warning(f"  [Audar] Missing keys ({len(missing)}): {missing[:5]}...")
+        if unexpected:
+            logger.warning(f"  [Audar] Unexpected keys ({len(unexpected)}): {unexpected[:5]}...")
+    else:
+        logger.warning(f"  [Audar] No V1 model provided - using random weights!")
+    
     decoder.eval()
     decoder.to(device)
     
@@ -234,15 +253,36 @@ def test_audar_streaming(audio_path: Path, device: str, save_outputs: bool = Tru
     num_params = sum(p.numel() for p in decoder.parameters())
     logger.info(f"  [Audar] Decoder params: {num_params:,}")
     
+    # Load and encode audio using V1
     audio = load_audio(audio_path)
+    audio_tensor = audio.unsqueeze(0).to(device)
+    
+    # Pad to align with hop length
+    pad_len = 320 - (audio_tensor.shape[-1] % 320)
+    if pad_len < 320:
+        audio_tensor = torch.nn.functional.pad(audio_tensor, (0, pad_len))
+    
     audio_duration = audio.shape[-1] / 16000
-    num_frames = int(audio_duration * 50)
+    
+    # Get REAL embeddings from V1 encoder
+    if v1_model is not None:
+        logger.info(f"  [Audar] Getting real VQ embeddings from V1 encoder...")
+        with torch.no_grad():
+            # Encode to codes
+            codes = v1_model.encode_code(audio_tensor)
+            # Get embeddings from quantizer (same as V1 decode_code does)
+            embeddings = v1_model.generator.quantizer.get_output_from_indices(codes.transpose(1, 2))
+            # embeddings shape: [B, T, 2048]
+        logger.info(f"  [Audar] Real embeddings shape: {embeddings.shape}")
+        num_frames = embeddings.shape[1]
+    else:
+        # Fallback to random embeddings
+        num_frames = int(audio_duration * 50)
+        torch.manual_seed(42)
+        embeddings = torch.randn(1, num_frames, config.vq_dim, device=device)
+        logger.warning(f"  [Audar] Using random embeddings (fallback)")
     
     logger.info(f"  [Audar] Audio duration: {audio_duration:.2f}s, frames: {num_frames}")
-    
-    # Use deterministic embeddings for reproducibility
-    torch.manual_seed(42)
-    embeddings = torch.randn(1, num_frames, config.vq_dim, device=device)
     
     # Full sequence decode
     if device == "cuda":
@@ -474,9 +514,9 @@ def main():
                 traceback.print_exc()
         
         # Audar-Codec
-        logger.info("\n--- Audar-Codec (streaming) ---")
+        logger.info("\n--- Audar-Codec (streaming with V1 weights) ---")
         try:
-            audar_result = test_audar_streaming(audio_path, device)
+            audar_result = test_audar_streaming(audio_path, device, v1_model=v1_model)
             all_results["audar_results"].append(audar_result)
         except Exception as e:
             logger.error(f"Audar test error: {e}")
