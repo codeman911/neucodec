@@ -38,6 +38,8 @@ from neucodec.model import NeuCodec
 
 # Sample dataset
 SAMPLE_DIR = PROJECT_ROOT / "sample_dataset_6"
+# Output directory for reconstructed audio
+OUTPUT_DIR = PROJECT_ROOT / "comparison_outputs"
 # Select 4 test files per protocol (2 male, 2 female, mix of dialects)
 TEST_FILES = [
     "emirati_female_1_v6.wav",
@@ -45,6 +47,15 @@ TEST_FILES = [
     "saudi_female_1_v6.wav",
     "saudi_male_1_v6.wav",
 ]
+
+
+def save_audio(waveform: torch.Tensor, path: Path, sample_rate: int = 24000):
+    """Save audio tensor to file."""
+    waveform = waveform.cpu()
+    if waveform.dim() == 3:
+        waveform = waveform.squeeze(0)
+    torchaudio.save(str(path), waveform, sample_rate)
+    logger.info(f"  Saved audio: {path.name} ({waveform.shape[-1]} samples)")
 
 
 def log_system_info():
@@ -120,7 +131,7 @@ def compute_metrics(original: torch.Tensor, reconstructed: torch.Tensor) -> Dict
     }
 
 
-def test_neucodec_v1(model: NeuCodec, audio_path: Path, device: str) -> Dict:
+def test_neucodec_v1(model: NeuCodec, audio_path: Path, device: str, save_outputs: bool = True) -> Dict:
     """Test NeuCodec V1 (full sequence, non-streaming)."""
     logger.info(f"  [V1] Loading audio: {audio_path.name}")
     audio = load_audio(audio_path)
@@ -154,6 +165,14 @@ def test_neucodec_v1(model: NeuCodec, audio_path: Path, device: str) -> Dict:
     
     logger.info(f"  [V1] Recon shape: {recon.shape}, decode_time: {decode_time:.4f}s")
     
+    # Save reconstructed audio
+    recon_path = None
+    if save_outputs:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        stem = audio_path.stem
+        recon_path = OUTPUT_DIR / f"{stem}_v1_recon.wav"
+        save_audio(recon, recon_path, sample_rate=24000)
+    
     # Metrics
     audio_16k = audio.cpu()
     recon_24k = recon.cpu()
@@ -167,6 +186,7 @@ def test_neucodec_v1(model: NeuCodec, audio_path: Path, device: str) -> Dict:
         "model": "NeuCodec_V1",
         "mode": "full_sequence",
         "file": audio_path.name,
+        "recon_file": str(recon_path) if recon_path else None,
         "encode_time_s": encode_time,
         "decode_time_s": decode_time,
         "total_time_s": encode_time + decode_time,
@@ -183,7 +203,7 @@ def test_neucodec_v1(model: NeuCodec, audio_path: Path, device: str) -> Dict:
     return result
 
 
-def test_audar_streaming(audio_path: Path, device: str) -> Dict:
+def test_audar_streaming(audio_path: Path, device: str, save_outputs: bool = True) -> Dict:
     """Test Audar-Codec streaming decoder."""
     from audar_codec.model import AudarCodec, AudarCodecConfig
     from audar_codec.core.streaming_decoder import StreamingCodecDecoder
@@ -236,8 +256,17 @@ def test_audar_streaming(audio_path: Path, device: str) -> Dict:
     
     logger.info(f"  [Audar] Full decode: shape={full_audio.shape}, time={full_time:.4f}s")
     
+    # Save full decode audio
+    full_recon_path = None
+    if save_outputs:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        stem = audio_path.stem
+        full_recon_path = OUTPUT_DIR / f"{stem}_audar_full.wav"
+        save_audio(full_audio, full_recon_path, sample_rate=24000)
+    
     # Streaming decode with multiple chunk sizes
     chunk_results = {}
+    streaming_recon_path = None
     for chunk_size in [5, 10, 20, 50]:
         state = None
         streaming_chunks = []
@@ -277,12 +306,20 @@ def test_audar_streaming(audio_path: Path, device: str) -> Dict:
             "shapes_match": full_audio.shape == streaming_audio.shape,
         }
         
+        # Save streaming audio for chunk_size=10
+        if save_outputs and chunk_size == 10:
+            stem = audio_path.stem
+            streaming_recon_path = OUTPUT_DIR / f"{stem}_audar_stream.wav"
+            save_audio(streaming_audio, streaming_recon_path, sample_rate=24000)
+        
         logger.info(f"  [Audar] Chunk={chunk_size}: RTF={stream_time/audio_duration:.4f}, diff={diff:.6f}")
     
     return {
         "model": "Audar_Codec",
         "mode": "streaming",
         "file": audio_path.name,
+        "full_recon_file": str(full_recon_path) if full_recon_path else None,
+        "streaming_recon_file": str(streaming_recon_path) if streaming_recon_path else None,
         "full_decode_time_s": full_time,
         "audio_duration_s": audio_duration,
         "rtf_full": full_time / audio_duration,
@@ -487,6 +524,14 @@ def main():
     # Save results
     output_path = PROJECT_ROOT / "comparison_results.json"
     save_results(all_results, output_path)
+    
+    # Log output directory
+    if OUTPUT_DIR.exists():
+        audio_files = list(OUTPUT_DIR.glob("*.wav"))
+        logger.info(f"\nReconstructed audio saved to: {OUTPUT_DIR}")
+        logger.info(f"  Total audio files: {len(audio_files)}")
+        for f in audio_files:
+            logger.info(f"    {f.name}")
     
     logger.info(f"\n{'=' * 70}")
     logger.info("COMPARISON COMPLETE")
