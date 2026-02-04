@@ -1,0 +1,355 @@
+{
+  "timestamp": "2026-02-03T11:48:10.806116",
+  "device": "cuda",
+  "test_files": [
+    "emirati_female_1_v6.wav",
+    "emirati_male_1_v6.wav",
+    "saudi_female_1_v6.wav",
+    "saudi_male_1_v6.wav"
+  ],
+  "v1_results": [
+    {
+      "model": "NeuCodec_V1",
+      "mode": "full_sequence",
+      "file": "emirati_female_1_v6.wav",
+      "recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/emirati_female_1_v6_v1_recon.wav",
+      "encode_time_s": 0.4552619680762291,
+      "decode_time_s": 0.24284086981788278,
+      "total_time_s": 0.6981028378941119,
+      "audio_duration_s": 14.0,
+      "rtf_encode": 0.032518712005444934,
+      "rtf_decode": 0.017345776415563056,
+      "rtf_total": 0.04986448842100799,
+      "num_codes": 700,
+      "code_rate_hz": 50.0,
+      "snr_db": -1.6681681871414185,
+      "psnr_db": 25.492774963378906,
+      "rmse": 0.041420429944992065,
+      "correlation": 0.27495768666267395,
+      "length_original": 336000,
+      "length_reconstructed": 336000
+    },
+    {
+      "model": "NeuCodec_V1",
+      "mode": "full_sequence",
+      "file": "emirati_male_1_v6.wav",
+      "recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/emirati_male_1_v6_v1_recon.wav",
+      "encode_time_s": 0.19953039195388556,
+      "decode_time_s": 0.05958581203594804,
+      "total_time_s": 0.2591162039898336,
+      "audio_duration_s": 26.0,
+      "rtf_encode": 0.007674245844380214,
+      "rtf_decode": 0.002291762001382617,
+      "rtf_total": 0.00996600784576283,
+      "num_codes": 1300,
+      "code_rate_hz": 50.0,
+      "snr_db": -0.05880516767501831,
+      "psnr_db": 26.819835662841797,
+      "rmse": 0.032384682446718216,
+      "correlation": 0.464485764503479,
+      "length_original": 624000,
+      "length_reconstructed": 624000
+    },
+    {
+      "model": "NeuCodec_V1",
+      "mode": "full_sequence",
+      "file": "saudi_female_1_v6.wav",
+      "recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/saudi_female_1_v6_v1_recon.wav",
+      "encode_time_s": 0.13971153320744634,
+      "decode_time_s": 0.05993961915373802,
+      "total_time_s": 0.19965115236118436,
+      "audio_duration_s": 18.0,
+      "rtf_encode": 0.0077617518448581295,
+      "rtf_decode": 0.0033299788418743345,
+      "rtf_total": 0.011091730686732464,
+      "num_codes": 900,
+      "code_rate_hz": 50.0,
+      "snr_db": -0.1877620965242386,
+      "psnr_db": 20.638687133789062,
+      "rmse": 0.07577432692050934,
+      "correlation": 0.427321195602417,
+      "length_original": 432000,
+      "length_reconstructed": 432000
+    },
+    {
+      "model": "NeuCodec_V1",
+      "mode": "full_sequence",
+      "file": "saudi_male_1_v6.wav",
+      "recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/saudi_male_1_v6_v1_recon.wav",
+      "encode_time_s": 0.16372324619442225,
+      "decode_time_s": 0.06073772395029664,
+      "total_time_s": 0.22446097014471889,
+      "audio_duration_s": 22.0,
+      "rtf_encode": 0.007441965736110102,
+      "rtf_decode": 0.0027608056341043925,
+      "rtf_total": 0.010202771370214496,
+      "num_codes": 1100,
+      "code_rate_hz": 50.0,
+      "snr_db": 0.7986445426940918,
+      "psnr_db": 21.19548797607422,
+      "rmse": 0.054452139884233475,
+      "correlation": 0.5918004512786865,
+      "length_original": 528000,
+      "length_reconstructed": 528000
+    }
+  ],
+  "audar_results": [
+    {
+      "model": "Audar_Codec",
+      "mode": "streaming",
+      "file": "emirati_female_1_v6.wav",
+      "full_recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/emirati_female_1_v6_audar_full.wav",
+      "streaming_recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/emirati_female_1_v6_audar_stream.wav",
+      "full_decode_time_s": 0.01401966530829668,
+      "audio_duration_s": 14.0,
+      "rtf_full": 0.0010014046648783343,
+      "num_frames": 700,
+      "output_samples_full": 336000,
+      "num_params": 187621250,
+      "chunk_results": {
+        "chunk_5": {
+          "time_s": 0.8326327889226377,
+          "rtf": 0.059473770637331266,
+          "num_chunks": 140,
+          "output_samples": 336000,
+          "mean_diff": 0.050927627831697464,
+          "max_diff": 3.102524757385254,
+          "shapes_match": true
+        },
+        "chunk_10": {
+          "time_s": 0.43853859696537256,
+          "rtf": 0.031324185497526615,
+          "num_chunks": 70,
+          "output_samples": 336000,
+          "mean_diff": 0.049930255860090256,
+          "max_diff": 3.4172182083129883,
+          "shapes_match": true
+        },
+        "chunk_20": {
+          "time_s": 0.24788790801540017,
+          "rtf": 0.017706279143957154,
+          "num_chunks": 35,
+          "output_samples": 336000,
+          "mean_diff": 0.050146374851465225,
+          "max_diff": 3.770742416381836,
+          "shapes_match": true
+        },
+        "chunk_50": {
+          "time_s": 0.1329161780886352,
+          "rtf": 0.0094940127206168,
+          "num_chunks": 14,
+          "output_samples": 336000,
+          "mean_diff": 0.05048604682087898,
+          "max_diff": 4.549441814422607,
+          "shapes_match": true
+        }
+      }
+    },
+    {
+      "model": "Audar_Codec",
+      "mode": "streaming",
+      "file": "emirati_male_1_v6.wav",
+      "full_recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/emirati_male_1_v6_audar_full.wav",
+      "streaming_recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/emirati_male_1_v6_audar_stream.wav",
+      "full_decode_time_s": 0.01858186675235629,
+      "audio_duration_s": 26.0,
+      "rtf_full": 0.0007146871827829343,
+      "num_frames": 1300,
+      "output_samples_full": 624000,
+      "num_params": 187621250,
+      "chunk_results": {
+        "chunk_5": {
+          "time_s": 1.438088605646044,
+          "rtf": 0.05531110021715554,
+          "num_chunks": 260,
+          "output_samples": 624000,
+          "mean_diff": 0.03655606508255005,
+          "max_diff": 3.703218698501587,
+          "shapes_match": true
+        },
+        "chunk_10": {
+          "time_s": 0.7362486179918051,
+          "rtf": 0.02831725453814635,
+          "num_chunks": 130,
+          "output_samples": 624000,
+          "mean_diff": 0.036459311842918396,
+          "max_diff": 2.470113754272461,
+          "shapes_match": true
+        },
+        "chunk_20": {
+          "time_s": 0.3892466281540692,
+          "rtf": 0.014971024159771891,
+          "num_chunks": 65,
+          "output_samples": 624000,
+          "mean_diff": 0.03532109409570694,
+          "max_diff": 3.0424118041992188,
+          "shapes_match": true
+        },
+        "chunk_50": {
+          "time_s": 0.17322583915665746,
+          "rtf": 0.006662532275256056,
+          "num_chunks": 26,
+          "output_samples": 624000,
+          "mean_diff": 0.03498254343867302,
+          "max_diff": 1.993307113647461,
+          "shapes_match": true
+        }
+      }
+    },
+    {
+      "model": "Audar_Codec",
+      "mode": "streaming",
+      "file": "saudi_female_1_v6.wav",
+      "full_recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/saudi_female_1_v6_audar_full.wav",
+      "streaming_recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/saudi_female_1_v6_audar_stream.wav",
+      "full_decode_time_s": 0.014883052092045546,
+      "audio_duration_s": 18.0,
+      "rtf_full": 0.0008268362273358636,
+      "num_frames": 900,
+      "output_samples_full": 432000,
+      "num_params": 187621250,
+      "chunk_results": {
+        "chunk_5": {
+          "time_s": 0.9825080470182002,
+          "rtf": 0.054583780389900007,
+          "num_chunks": 180,
+          "output_samples": 432000,
+          "mean_diff": 0.0846843346953392,
+          "max_diff": 2.5202887058258057,
+          "shapes_match": true
+        },
+        "chunk_10": {
+          "time_s": 0.5136210550554097,
+          "rtf": 0.02853450305863387,
+          "num_chunks": 90,
+          "output_samples": 432000,
+          "mean_diff": 0.08322905749082565,
+          "max_diff": 2.520559072494507,
+          "shapes_match": true
+        },
+        "chunk_20": {
+          "time_s": 0.2700550719164312,
+          "rtf": 0.015003059550912844,
+          "num_chunks": 45,
+          "output_samples": 432000,
+          "mean_diff": 0.08315891772508621,
+          "max_diff": 2.580063581466675,
+          "shapes_match": true
+        },
+        "chunk_50": {
+          "time_s": 0.1212248126976192,
+          "rtf": 0.0067347118165344,
+          "num_chunks": 18,
+          "output_samples": 432000,
+          "mean_diff": 0.0819864496588707,
+          "max_diff": 2.882969617843628,
+          "shapes_match": true
+        }
+      }
+    },
+    {
+      "model": "Audar_Codec",
+      "mode": "streaming",
+      "file": "saudi_male_1_v6.wav",
+      "full_recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/saudi_male_1_v6_audar_full.wav",
+      "streaming_recon_file": "/scratch/vikram.solanki/workspace/vs/tts/neucodec/comparison_outputs/saudi_male_1_v6_audar_stream.wav",
+      "full_decode_time_s": 0.018410021904855967,
+      "audio_duration_s": 22.0,
+      "rtf_full": 0.000836819177493453,
+      "num_frames": 1100,
+      "output_samples_full": 528000,
+      "num_params": 187621250,
+      "chunk_results": {
+        "chunk_5": {
+          "time_s": 1.2000808310694993,
+          "rtf": 0.05454912868497724,
+          "num_chunks": 220,
+          "output_samples": 528000,
+          "mean_diff": 0.06646282970905304,
+          "max_diff": 2.982661485671997,
+          "shapes_match": true
+        },
+        "chunk_10": {
+          "time_s": 0.6309573431499302,
+          "rtf": 0.028679879234087737,
+          "num_chunks": 110,
+          "output_samples": 528000,
+          "mean_diff": 0.06581475585699081,
+          "max_diff": 3.378171920776367,
+          "shapes_match": true
+        },
+        "chunk_20": {
+          "time_s": 0.33157359110191464,
+          "rtf": 0.015071526868268847,
+          "num_chunks": 55,
+          "output_samples": 528000,
+          "mean_diff": 0.0653892382979393,
+          "max_diff": 3.5223355293273926,
+          "shapes_match": true
+        },
+        "chunk_50": {
+          "time_s": 0.1468691062182188,
+          "rtf": 0.006675868464464491,
+          "num_chunks": 22,
+          "output_samples": 528000,
+          "mean_diff": 0.0655541867017746,
+          "max_diff": 3.264559745788574,
+          "shapes_match": true
+        }
+      }
+    }
+  ],
+  "consistency_analysis": {
+    "seq_20": {
+      "full_shape": [
+        1,
+        1,
+        5120
+      ],
+      "streaming_shape": [
+        1,
+        1,
+        5120
+      ],
+      "shapes_match": true,
+      "mean_abs_diff": 0.03346402570605278,
+      "max_abs_diff": 0.16461233794689178,
+      "std_diff": 0.04194715619087219,
+      "relative_diff": 1.7069755792617798
+    },
+    "seq_50": {
+      "full_shape": [
+        1,
+        1,
+        12800
+      ],
+      "streaming_shape": [
+        1,
+        1,
+        12800
+      ],
+      "shapes_match": true,
+      "mean_abs_diff": 0.034298013895750046,
+      "max_abs_diff": 0.16989856958389282,
+      "std_diff": 0.04307383671402931,
+      "relative_diff": 1.7686442136764526
+    },
+    "seq_100": {
+      "full_shape": [
+        1,
+        1,
+        25600
+      ],
+      "streaming_shape": [
+        1,
+        1,
+        25600
+      ],
+      "shapes_match": true,
+      "mean_abs_diff": 0.034625109285116196,
+      "max_abs_diff": 0.18220652639865875,
+      "std_diff": 0.04354150965809822,
+      "relative_diff": 1.7821474075317383
+    }
+  }
+}
